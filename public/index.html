@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>观演日程记录</title>
+  <link rel="stylesheet" href="styles/main.css" />
+
+</head>
+<body>
+  <div class="page-shell">
+    <header class="px-6 py-8">
+      <div class="surface rounded-3xl px-8 py-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative overflow-hidden">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="badge">云端同步</span>
+
+            <span class="text-sm text-muted">观演日程管理中心</span>
+          </div>
+          <h1 class="text-3xl lg:text-4xl font-semibold">观演日程记录</h1>
+          <p class="text-muted mt-2">记录已观看与待观看演出，随时掌握时间、预算与座位信息。</p>
+          <div class="flex flex-wrap items-center gap-3 mt-5">
+            <button class="button-primary">新建观演记录</button>
+            <button class="button-ghost">导出记录</button>
+          </div>
+        </div>
+        <div class="relative z-10 flex items-center gap-6">
+          <div class="text-right">
+            <p class="text-muted text-sm">本月已观看</p>
+            <p id="watchedCount" class="text-2xl font-semibold text-accent">0 场</p>
+          </div>
+          <div class="divider h-10 w-px"></div>
+          <div class="text-right">
+            <p class="text-muted text-sm">待观看</p>
+            <p id="upcomingCount" class="text-2xl font-semibold text-accent-2">0 场</p>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <main class="px-6 pb-12">
+      <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 flex flex-col gap-6">
+          <div class="card p-6">
+
+
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h2 class="text-xl font-semibold">近期观演安排</h2>
+                <p class="text-muted text-sm">按时间排序，包含已观看与待观看演出。</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="tag">近期提醒</span>
+                <span class="tag">云端同步</span>
+              </div>
+            </div>
+            <div id="recentList" class="space-y-4">
+              <p class="text-muted text-sm">暂无观演记录，请在右侧新增记录。</p>
+            </div>
+          </div>
+
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h2 class="text-xl font-semibold">观演数据分析</h2>
+                <p class="text-muted text-sm">按类型分布与月度花销趋势。</p>
+              </div>
+              <span class="badge">图表</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="space-y-3">
+                <p class="text-sm text-muted">类型分布</p>
+                <div class="card p-4">
+                  <canvas id="typeChart" height="220"></canvas>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <p class="text-sm text-muted">月度花销</p>
+                <div class="card p-4">
+                  <canvas id="monthlyChart" height="220"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <div class="card p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+              <div>
+                <h2 class="text-xl font-semibold">观演记录详情</h2>
+                <p class="text-muted text-sm">包含票价、实付、座位与卡司等关键字段。</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <select id="filterType" class="input text-sm">
+                  <option value="">全部类型</option>
+                </select>
+                <input id="filterMonth" type="month" class="input text-sm" />
+                <button id="filterReset" class="button-ghost text-sm" type="button">重置</button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="text-muted">
+                  <tr class="text-left">
+                    <th class="py-2">时间</th>
+                    <th class="py-2">演出名称</th>
+                    <th class="py-2">类型</th>
+                    <th class="py-2">城市 / 场馆</th>
+                    <th class="py-2">票价 / 实付</th>
+                    <th class="py-2">座位</th>
+                    <th class="py-2">卡司</th>
+                    <th class="py-2">操作</th>
+                  </tr>
+
+                </thead>
+                <tbody id="recordTableBody">
+                  <tr class="table-row">
+                    <td class="py-3 text-muted" colspan="8">暂无记录，请在右侧新增。</td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <aside class="flex flex-col gap-6">
+          <div class="card p-6" id="loginCard">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-lg font-semibold mb-1">账号登录</h2>
+                <p class="text-muted text-sm">登录后可查看个人记录与花销统计。</p>
+              </div>
+              <span class="badge">隔离</span>
+            </div>
+            <div id="userInfo" class="hidden mt-4">
+              <p class="text-sm">当前用户：<span id="currentUser" class="text-accent font-semibold"></span></p>
+              <button id="logoutButton" class="button-ghost mt-3 w-full" type="button">退出登录</button>
+            </div>
+            <form id="loginForm" class="space-y-3 mt-4">
+              <label class="block text-sm">
+                用户名
+                <input id="loginUsername" class="input w-full mt-2" placeholder="输入用户名" required />
+              </label>
+              <label class="block text-sm">
+                密码
+                <input id="loginPassword" type="password" class="input w-full mt-2" placeholder="输入密码" required />
+              </label>
+              <button id="loginButton" class="button-primary w-full" type="submit">登录 / 注册</button>
+              <p id="loginHint" class="text-xs text-muted">首次登录会自动创建账号。</p>
+            </form>
+          </div>
+
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold mb-4">最近待看演出</h2>
+            <div id="upcomingCard" class="space-y-3">
+              <div class="flex items-center justify-between">
+                <p id="upcomingTitle" class="font-semibold">暂无待看记录</p>
+                <span id="upcomingStatus" class="badge">待观看</span>
+              </div>
+              <p id="upcomingTime" class="text-muted text-sm">请先新增待看演出。</p>
+              <p id="upcomingVenue" class="text-sm"></p>
+              <div class="flex items-center justify-between text-sm">
+                <span id="upcomingPrice" class="text-accent">¥0</span>
+                <span id="upcomingSeat" class="text-muted">座位：- · 卡司：-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold mb-4">观演花销统计</h2>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted">已观看花销</span>
+                <span id="spentWatched" class="text-accent">¥0</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted">全部花销</span>
+                <span id="spentAll" class="text-accent-2">¥0</span>
+              </div>
+            </div>
+            <p class="text-xs text-muted mt-3">统计以“实付”金额为准。</p>
+          </div>
+
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold mb-4">新增记录</h2>
+
+            <form id="recordForm" class="space-y-4">
+
+              <label class="block text-sm">
+                演出名称
+                <input id="titleInput" class="input w-full mt-2" placeholder="例如：夜航之城" required />
+              </label>
+              <label class="block text-sm">
+                演出类型
+                <input id="typeInput" class="input w-full mt-2" placeholder="音乐剧 / 话剧 / 舞剧" required />
+              </label>
+              <label class="block text-sm">
+                演出时间
+                <input id="datetimeInput" class="input w-full mt-2" placeholder="2026-02-20 19:30" required />
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="block text-sm">
+                  城市
+                  <input id="cityInput" class="input w-full mt-2" placeholder="上海" required />
+                </label>
+                <label class="block text-sm">
+                  剧院 / 场馆
+                  <input id="venueInput" class="input w-full mt-2" placeholder="上音歌剧院" required />
+                </label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="block text-sm">
+                  票价
+                  <input id="priceInput" class="input w-full mt-2" placeholder="¥680" required />
+                </label>
+                <label class="block text-sm">
+                  实付
+                  <input id="paidInput" class="input w-full mt-2" placeholder="¥620" required />
+                </label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="block text-sm">
+                  座位
+                  <input id="seatInput" class="input w-full mt-2" placeholder="一层中区 B-12" />
+                </label>
+                <label class="block text-sm">
+                  卡司
+                  <input id="castInput" class="input w-full mt-2" placeholder="主演 / 指挥 / 乐团" />
+                </label>
+              </div>
+              <label class="block text-sm">
+                观看状态
+                <select id="statusInput" class="input w-full mt-2">
+                  <option value="待观看">待观看</option>
+                  <option value="已观看">已观看</option>
+                </select>
+              </label>
+
+              <button id="submitButton" class="button-primary w-full" type="submit">保存</button>
+            </form>
+
+          </div>
+
+
+
+
+        </aside>
+      </section>
+    </main>
+
+    <div id="editModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold">编辑观演记录</h3>
+            <p class="text-muted text-sm">更新已保存的记录信息。</p>
+          </div>
+          <button id="editClose" class="button-ghost" type="button">关闭</button>
+        </div>
+        <form id="editForm" class="space-y-4">
+          <input id="editId" type="hidden" />
+          <label class="block text-sm">
+            演出名称
+            <input id="editTitle" class="input w-full mt-2" required />
+          </label>
+          <label class="block text-sm">
+            演出类型
+            <input id="editType" class="input w-full mt-2" required />
+          </label>
+          <label class="block text-sm">
+            演出时间
+            <input id="editDatetime" class="input w-full mt-2" required />
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-sm">
+              城市
+              <input id="editCity" class="input w-full mt-2" required />
+            </label>
+            <label class="block text-sm">
+              剧院 / 场馆
+              <input id="editVenue" class="input w-full mt-2" required />
+            </label>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-sm">
+              票价
+              <input id="editPrice" class="input w-full mt-2" required />
+            </label>
+            <label class="block text-sm">
+              实付
+              <input id="editPaid" class="input w-full mt-2" required />
+            </label>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-sm">
+              座位
+              <input id="editSeat" class="input w-full mt-2" />
+            </label>
+            <label class="block text-sm">
+              卡司
+              <input id="editCast" class="input w-full mt-2" />
+            </label>
+          </div>
+          <label class="block text-sm">
+            观看状态
+            <select id="editStatus" class="input w-full mt-2">
+              <option value="待观看">待观看</option>
+              <option value="已观看">已观看</option>
+            </select>
+          </label>
+          <div class="flex flex-col sm:flex-row gap-3 sm:justify-end">
+            <button id="editCancel" class="button-ghost" type="button">取消</button>
+            <button id="editSubmit" class="button-primary" type="submit">保存修改</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+
+    const recentList = document.getElementById("recentList");
+    const recordTableBody = document.getElementById("recordTableBody");
+    const watchedCount = document.getElementById("watchedCount");
+    const upcomingCount = document.getElementById("upcomingCount");
+    const recordForm = document.getElementById("recordForm");
+    const submitButton = document.getElementById("submitButton");
+    const spentWatched = document.getElementById("spentWatched");
+    const spentAll = document.getElementById("spentAll");
+    const upcomingCard = document.getElementById("upcomingCard");
+    const upcomingTitle = document.getElementById("upcomingTitle");
+    const upcomingStatus = document.getElementById("upcomingStatus");
+    const upcomingTime = document.getElementById("upcomingTime");
+    const upcomingVenue = document.getElementById("upcomingVenue");
+    const upcomingPrice = document.getElementById("upcomingPrice");
+    const upcomingSeat = document.getElementById("upcomingSeat");
+    const filterType = document.getElementById("filterType");
+    const filterMonth = document.getElementById("filterMonth");
+    const filterReset = document.getElementById("filterReset");
+    const typeChartCanvas = document.getElementById("typeChart");
+    const monthlyChartCanvas = document.getElementById("monthlyChart");
+
+
+    const loginForm = document.getElementById("loginForm");
+    const loginButton = document.getElementById("loginButton");
+    const logoutButton = document.getElementById("logoutButton");
+    const loginUsername = document.getElementById("loginUsername");
+    const loginPassword = document.getElementById("loginPassword");
+    const currentUser = document.getElementById("currentUser");
+    const userInfo = document.getElementById("userInfo");
+
+    const editModal = document.getElementById("editModal");
+    const editClose = document.getElementById("editClose");
+    const editCancel = document.getElementById("editCancel");
+    const editForm = document.getElementById("editForm");
+    const editSubmit = document.getElementById("editSubmit");
+
+    const editFields = {
+      id: document.getElementById("editId"),
+      title: document.getElementById("editTitle"),
+      type: document.getElementById("editType"),
+      datetime: document.getElementById("editDatetime"),
+      city: document.getElementById("editCity"),
+      venue: document.getElementById("editVenue"),
+      price: document.getElementById("editPrice"),
+      paid: document.getElementById("editPaid"),
+      seat: document.getElementById("editSeat"),
+      cast: document.getElementById("editCast"),
+      status: document.getElementById("editStatus")
+    };
+
+    let typeChartInstance = null;
+    let monthlyChartInstance = null;
+    let currentRecords = [];
+
+
+    const fieldMap = {
+
+      title: document.getElementById("titleInput"),
+      type: document.getElementById("typeInput"),
+      datetime: document.getElementById("datetimeInput"),
+      city: document.getElementById("cityInput"),
+      venue: document.getElementById("venueInput"),
+      price: document.getElementById("priceInput"),
+      paid: document.getElementById("paidInput"),
+      seat: document.getElementById("seatInput"),
+      cast: document.getElementById("castInput"),
+      status: document.getElementById("statusInput")
+    };
+
+    const parseCurrency = (value) => {
+      if (!value) return 0;
+      const normalized = String(value).replace(/[^\d.]/g, "");
+      const numeric = Number.parseFloat(normalized);
+      return Number.isFinite(numeric) ? numeric : 0;
+    };
+
+    const formatCurrency = (value) => {
+      const numeric = Number(value || 0);
+      return `¥${numeric.toLocaleString("zh-CN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })}`;
+    };
+
+
+    const formatInfo = (record) => `${record.datetime} · ${record.city} · ${record.venue}`;
+    const formatSeat = (record) => {
+      const seat = record.seat ? `座位：${record.seat}` : "座位：-";
+      const cast = record.cast ? `卡司：${record.cast}` : "卡司：-";
+      return `${seat} · ${cast}`;
+    };
+
+    const openEditModal = (record) => {
+      editFields.id.value = record.id;
+      editFields.title.value = record.title;
+      editFields.type.value = record.type;
+      editFields.datetime.value = record.datetime;
+      editFields.city.value = record.city;
+      editFields.venue.value = record.venue;
+      editFields.price.value = record.price;
+      editFields.paid.value = record.paid;
+      editFields.seat.value = record.seat || "";
+      editFields.cast.value = record.cast || "";
+      editFields.status.value = record.status;
+      editModal.classList.add("open");
+      editModal.setAttribute("aria-hidden", "false");
+    };
+
+    const closeEditModal = () => {
+      editModal.classList.remove("open");
+      editModal.setAttribute("aria-hidden", "true");
+    };
+
+    const setAuthState = (user) => {
+
+      if (user) {
+        currentUser.textContent = user.username;
+        userInfo.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+        recordForm.classList.remove("form-disabled");
+        submitButton.removeAttribute("disabled");
+      } else {
+        userInfo.classList.add("hidden");
+        loginForm.classList.remove("hidden");
+        recordForm.classList.add("form-disabled");
+        submitButton.setAttribute("disabled", "true");
+      }
+    };
+
+    const renderRecent = (records) => {
+      if (!records.length) {
+        recentList.innerHTML = '<p class="text-muted text-sm">暂无观演记录，请在右侧新增记录。</p>';
+        return;
+      }
+      recentList.innerHTML = records.slice(0, 3).map((record) => `
+        <article class="table-row py-4">
+          <div class="flex flex-wrap justify-between gap-4">
+            <div>
+              <h3 class="font-semibold">${record.title}</h3>
+              <p class="text-muted text-sm">${formatInfo(record)}</p>
+              <p class="text-sm">${formatSeat(record)}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-accent font-semibold">${record.price}</p>
+              <p class="text-muted text-sm">实付 ${record.paid}</p>
+              <p class="badge mt-2 inline-flex">${record.status}</p>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    };
+
+    const renderTable = (records) => {
+      if (!records.length) {
+        recordTableBody.innerHTML = '<tr class="table-row"><td class="py-3 text-muted" colspan="8">暂无记录，请在右侧新增。</td></tr>';
+        return;
+      }
+      recordTableBody.innerHTML = records.map((record) => `
+        <tr class="table-row">
+          <td class="py-3">${record.datetime}</td>
+          <td class="py-3">${record.title}</td>
+          <td class="py-3">${record.type}</td>
+          <td class="py-3">${record.city} · ${record.venue}</td>
+          <td class="py-3">${record.price} / ${record.paid}</td>
+          <td class="py-3">${record.seat || "-"}</td>
+          <td class="py-3">${record.cast || "-"}</td>
+          <td class="py-3">
+            <button class="button-ghost text-xs edit-button" data-id="${record.id}" type="button">编辑</button>
+          </td>
+        </tr>
+      `).join("");
+    };
+
+
+    const renderStats = (stats = {}) => {
+      watchedCount.textContent = `${stats.watchedCount || 0} 场`;
+      upcomingCount.textContent = `${stats.upcomingCount || 0} 场`;
+      spentAll.textContent = formatCurrency(stats.sumPaidAll || 0);
+      spentWatched.textContent = formatCurrency(stats.sumPaidWatched || 0);
+    };
+
+    const renderUpcoming = (records = []) => {
+      const upcomingRecords = records.filter((record) => record.status === "待观看");
+      if (!upcomingRecords.length) {
+        upcomingTitle.textContent = "暂无待看记录";
+        upcomingStatus.textContent = "待观看";
+        upcomingTime.textContent = "请先新增待看演出。";
+        upcomingVenue.textContent = "";
+        upcomingPrice.textContent = "¥0";
+        upcomingSeat.textContent = "座位：- · 卡司：-";
+        return;
+      }
+
+      const sorted = upcomingRecords
+        .map((record) => ({
+          record,
+          time: Number.isNaN(Date.parse(record.datetime)) ? Infinity : Date.parse(record.datetime)
+        }))
+        .sort((a, b) => a.time - b.time);
+
+      const selected = sorted[0].record;
+      upcomingTitle.textContent = selected.title;
+      upcomingStatus.textContent = selected.status;
+      upcomingTime.textContent = selected.datetime;
+      upcomingVenue.textContent = `${selected.city} · ${selected.venue}`;
+      upcomingPrice.textContent = selected.paid || "¥0";
+      const seatText = selected.seat ? `座位：${selected.seat}` : "座位：-";
+      const castText = selected.cast ? `卡司：${selected.cast}` : "卡司：-";
+      upcomingSeat.textContent = `${seatText} · ${castText}`;
+    };
+
+    const buildChart = (records = []) => {
+      const typeCounter = {};
+      const monthCounter = {};
+
+      records.forEach((record) => {
+        const type = record.type || "未分类";
+        const monthKey = record.datetime ? record.datetime.slice(0, 7) : "未知";
+        typeCounter[type] = (typeCounter[type] || 0) + 1;
+        monthCounter[monthKey] = (monthCounter[monthKey] || 0) + parseCurrency(record.paid);
+      });
+
+
+      const typeLabels = Object.keys(typeCounter);
+      const typeValues = Object.values(typeCounter);
+      const monthLabels = Object.keys(monthCounter).sort();
+      const monthValues = monthLabels.map((key) => monthCounter[key]);
+
+      if (typeChartInstance) {
+        typeChartInstance.data.labels = typeLabels;
+        typeChartInstance.data.datasets[0].data = typeValues;
+        typeChartInstance.update();
+      } else {
+        typeChartInstance = new Chart(typeChartCanvas, {
+          type: "doughnut",
+          data: {
+            labels: typeLabels,
+            datasets: [
+              {
+                data: typeValues,
+                backgroundColor: ["#ff4b4b", "#ff8a1f", "#ffb347", "#ff6f91", "#ff9f1c"]
+              }
+            ]
+          },
+          options: {
+            plugins: {
+              legend: {
+                labels: { color: "#f5f5f7" }
+              }
+            }
+          }
+        });
+      }
+
+      if (monthlyChartInstance) {
+        monthlyChartInstance.data.labels = monthLabels;
+        monthlyChartInstance.data.datasets[0].data = monthValues;
+        monthlyChartInstance.update();
+      } else {
+        monthlyChartInstance = new Chart(monthlyChartCanvas, {
+          type: "line",
+          data: {
+            labels: monthLabels,
+            datasets: [
+              {
+                label: "月度实付",
+                data: monthValues,
+                borderColor: "#ff4b4b",
+                backgroundColor: "rgba(255, 75, 75, 0.2)",
+                tension: 0.3,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            scales: {
+              x: {
+                ticks: { color: "#a3a3b2" },
+                grid: { color: "rgba(255,255,255,0.05)" }
+              },
+              y: {
+                ticks: { color: "#a3a3b2" },
+                grid: { color: "rgba(255,255,255,0.05)" }
+              }
+            },
+            plugins: {
+              legend: {
+                labels: { color: "#f5f5f7" }
+              }
+            }
+          }
+        });
+      }
+    };
+
+    const buildQuery = () => {
+      const params = new URLSearchParams();
+      if (filterType.value) params.set("type", filterType.value);
+      if (filterMonth.value) params.set("month", filterMonth.value);
+      const query = params.toString();
+      return query ? `?${query}` : "";
+    };
+
+    const loadTypes = async () => {
+      try {
+        const response = await fetch("/api/types");
+        if (!response.ok) return;
+        const data = await response.json();
+        const types = data.types || [];
+        filterType.innerHTML = '<option value="">全部类型</option>';
+        types.forEach((type) => {
+          const option = document.createElement("option");
+          option.value = type;
+          option.textContent = type;
+          filterType.appendChild(option);
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    const loadRecords = async () => {
+      try {
+        const response = await fetch(`/api/records${buildQuery()}`);
+        if (response.status === 401) {
+          currentRecords = [];
+          renderRecent([]);
+          renderTable([]);
+          renderStats({});
+          renderUpcoming([]);
+          buildChart([]);
+          return;
+        }
+
+
+        const data = await response.json();
+        const records = data.records || [];
+        currentRecords = records;
+        renderRecent(records);
+        renderTable(records);
+        renderStats(data.stats || {});
+        renderUpcoming(records);
+        buildChart(records);
+
+
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+
+    const loadMe = async () => {
+      try {
+        const response = await fetch("/api/me");
+        if (!response.ok) {
+          setAuthState(null);
+          renderRecent([]);
+          renderTable([]);
+          renderStats({});
+          renderUpcoming([]);
+          buildChart([]);
+          return;
+        }
+
+        const data = await response.json();
+        setAuthState(data.user);
+        await loadTypes();
+        await loadRecords();
+      } catch (error) {
+        setAuthState(null);
+      }
+    };
+
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginButton.setAttribute("disabled", "true");
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: loginUsername.value.trim(),
+            password: loginPassword.value
+          })
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        setAuthState(data.user);
+        loginPassword.value = "";
+        await loadTypes();
+        await loadRecords();
+
+      } catch (error) {
+        console.error(error);
+      } finally {
+        loginButton.removeAttribute("disabled");
+      }
+    });
+
+    logoutButton.addEventListener("click", async () => {
+      try {
+        await fetch("/api/logout", { method: "POST" });
+      } catch (error) {
+        console.error(error);
+      }
+      setAuthState(null);
+      currentRecords = [];
+      renderRecent([]);
+      renderTable([]);
+      renderStats({});
+      renderUpcoming([]);
+      buildChart([]);
+      filterType.innerHTML = '<option value="">全部类型</option>';
+      filterMonth.value = "";
+
+    });
+
+
+
+    recordForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      submitButton.setAttribute("disabled", "true");
+
+      const payload = {
+        title: fieldMap.title.value.trim(),
+        type: fieldMap.type.value.trim(),
+        datetime: fieldMap.datetime.value.trim(),
+        city: fieldMap.city.value.trim(),
+        venue: fieldMap.venue.value.trim(),
+        price: fieldMap.price.value.trim(),
+        paid: fieldMap.paid.value.trim(),
+        seat: fieldMap.seat.value.trim(),
+        cast: fieldMap.cast.value.trim(),
+        status: fieldMap.status.value
+      };
+
+      try {
+        const response = await fetch("/api/records", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          return;
+        }
+        recordForm.reset();
+        fieldMap.status.value = "待观看";
+        await loadTypes();
+        await loadRecords();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        submitButton.removeAttribute("disabled");
+      }
+    });
+
+    filterType.addEventListener("change", () => {
+      loadRecords();
+    });
+
+    filterMonth.addEventListener("change", () => {
+      loadRecords();
+    });
+
+    filterReset.addEventListener("click", () => {
+      filterType.value = "";
+      filterMonth.value = "";
+      loadRecords();
+    });
+
+    recordTableBody.addEventListener("click", (event) => {
+      const button = event.target.closest(".edit-button");
+      if (!button) return;
+      const recordId = Number(button.dataset.id);
+      const record = currentRecords.find((item) => item.id === recordId);
+      if (!record) return;
+      openEditModal(record);
+    });
+
+    editClose.addEventListener("click", () => {
+      closeEditModal();
+    });
+
+    editCancel.addEventListener("click", () => {
+      closeEditModal();
+    });
+
+    editModal.addEventListener("click", (event) => {
+      if (event.target === editModal) {
+        closeEditModal();
+      }
+    });
+
+    editForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      editSubmit.setAttribute("disabled", "true");
+
+      const payload = {
+        title: editFields.title.value.trim(),
+        type: editFields.type.value.trim(),
+        datetime: editFields.datetime.value.trim(),
+        city: editFields.city.value.trim(),
+        venue: editFields.venue.value.trim(),
+        price: editFields.price.value.trim(),
+        paid: editFields.paid.value.trim(),
+        seat: editFields.seat.value.trim(),
+        cast: editFields.cast.value.trim(),
+        status: editFields.status.value
+      };
+
+      try {
+        const response = await fetch(`/api/records/${editFields.id.value}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          return;
+        }
+        closeEditModal();
+        await loadTypes();
+        await loadRecords();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        editSubmit.removeAttribute("disabled");
+      }
+    });
+
+    recordForm.classList.add("form-disabled");
+    submitButton.setAttribute("disabled", "true");
+    loadMe();
+
+
+  </script>
+
+</body>
+</html>
+

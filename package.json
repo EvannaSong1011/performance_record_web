@@ -1,0 +1,12 @@
+{
+  "name": "show-schedule-vercel",
+  "version": "2.0.0",
+  "private": true,
+  "description": "观演日程记录 - Vercel + Supabase 部署版",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
