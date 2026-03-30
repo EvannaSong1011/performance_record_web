@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 观演日程记录 — Vercel + Supabase 部署指南
 
 ## 项目结构
@@ -120,3 +121,6 @@ vercel dev
 | SQL 占位符 | `?` | `$1, $2, $3...` |
 | 静态文件服务 | Express 手动 serve | Vercel 自动托管 `public/` |
 | 前端代码 | 无变化 | 无变化（API 路径完全一致） |
+=======
+# performance_record_web
+>>>>>>> 240b4b92d7b91f0a278720ee29e4be75336c917e
